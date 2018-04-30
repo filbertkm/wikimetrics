@@ -1,0 +1,15 @@
+{
+    "name": "aude/metrics-tool",
+    "authors": [
+        {
+            "name": "aude",
+            "email": "aude.wiki@gmail.com"
+        }
+    ],
+    "require": {},
+    "autoload": {
+        "psr-4": {
+            "MetricsTool\\": "src/"
+        }
+    }
+}
