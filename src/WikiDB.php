@@ -6,6 +6,9 @@ use PDO;
 
 class WikiDB {
 
+	/**
+	 * @var PDO
+	 */
     private $db;
 
     public function __construct()
@@ -15,59 +18,26 @@ class WikiDB {
 
     public function getEditCount($users)
     {
-        $editCounts = [];
-
-        $year = 2017;
-        $month = 7;
-
-        while ($year < 2019) {
-            $date = $year . '-' . $month;
-
-            $stats = $this->getEditCountsForMonth($year, $month, $users);
-            $editCounts[$date] = $stats;
-
-            if ($month === 12) {
-                $year++;
-                $month = 1;
-            } else {
-                $month++;
-            }
-
-            if ($year === 2018 && $month === 5) {
-                break;
-            }
-        }
-
-        return $editCounts;
-    }
-
-    private function getEditCountsForMonth($year, $month, $users)
-    {
-        $nextYear = $month === 12 ? $year + 1 : $year;
-        $nextMonth = $month === 12 ? 1 : $month + 1;
-
-        $month = $month >= 10 ? (string)$month : "0$month";
-        $nextMonth = $month >= 10 ? (string)$nextMonth : "0$nextMonth";
+	    $startDate = '201701';
 
         $placeholders = str_repeat ('?, ',  count ($users) - 1) . '?';
 
-        $sql = 'SELECT rev_user_text, count(*) as count '
-            . ' FROM revision_userindex '
-            . " WHERE rev_user_text IN ($placeholders) "
-            . ' AND rev_timestamp >= ' . $year . $month . '01000000 '
-            . ' AND rev_timestamp < ' . $nextYear . $nextMonth . '01000000 '
-            . ' GROUP BY rev_user_text ';
+        $sql = 'SELECT rev_user_text, substring(rev_timestamp, 1, 6) as monthdate, count(*) as count '
+	            . ' FROM revision_userindex '
+				. " WHERE rev_user_text IN ($placeholders) "
+	            . ' AND rev_timestamp > ' . $startDate . '01000000 '
+	            . ' GROUP BY rev_user_text, monthdate '
+                . ' ORDER BY rev_user_text, monthdate';
 
         $q = $this->db->prepare($sql);
         $q->execute($users);
 
         $results = $q->fetchAll();
 
-        $editCounts = array_combine($users, array_map(function($user) { return 0; }, $users));
-
         foreach ($results as $result) {
             $userName = $result['rev_user_text'];
-            $editCounts[$userName] = (int)$result['count'];
+            $monthDate = $result['monthdate'];
+            $editCounts[$userName][$monthDate] = (int)$result['count'];
         }
 
         ksort($editCounts);
